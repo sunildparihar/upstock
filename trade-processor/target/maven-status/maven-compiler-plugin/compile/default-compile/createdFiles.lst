@@ -1,0 +1,4 @@
+com/upstock/trade/processor/TraderProcessor.class
+com/upstock/trade/processor/Worker2.class
+com/upstock/trade/processor/helper/OHLCPacketHelper.class
+com/upstock/trade/processor/DefaultTradeProcessor.class

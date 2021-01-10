@@ -1,0 +1,5 @@
+com/upstock/trade/commons/pojo/DoubleSerializer.class
+com/upstock/trade/commons/pojo/Trade.class
+com/upstock/trade/commons/logger/ExceptionLogger.class
+com/upstock/trade/commons/constant/TradeContants.class
+com/upstock/trade/commons/pojo/OHLCPacket.class
