@@ -15,6 +15,7 @@
         <module>trade-worker</module>
         <module>trade-subscription</module>
         <module>trade-server</module>
+        <module>performance-tracker</module>
     </modules>
     <packaging>pom</packaging>
 

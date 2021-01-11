@@ -29,11 +29,4 @@ public class Trade {
     private boolean isLastTrade;
     private boolean isEmpty;
 
-    public static Trade createEmptyTrade() {
-        Trade trade = new Trade();
-        trade.setLastTrade(true);
-        trade.setEmpty(true);
-        return trade;
-
-    }
 }

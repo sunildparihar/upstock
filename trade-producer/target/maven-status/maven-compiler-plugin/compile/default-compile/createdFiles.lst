@@ -1,3 +1,3 @@
-com/upstock/trade/producer/TradeProducer.class
-com/upstock/trade/producer/DefaultTradeProducer.class
+com/upstock/trade/producer/TradeReader.class
 com/upstock/trade/producer/Worker1.class
+com/upstock/trade/producer/DefaultTradeReader.class

@@ -21,6 +21,14 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+/**
+ * An OHLC packet subscription service implementation for
+ *
+ *  1. Tracking and managing all the listeners.
+ *  2. Invoking the subscribed listeners for the incoming packets.
+ *
+ *  Listeners are invoked in Asyn mode using a Thread Pool so that workers don't block upon listener's action completion
+ */
 @Component
 public class OHLCPacketSubscriptionService {
 

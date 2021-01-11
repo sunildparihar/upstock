@@ -1,7 +1,8 @@
 package com.upstock.trade.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.upstock.trade.commons.constant.TradeContants;
+import com.upstock.trade.commons.constant.TradeConstants;
+import com.upstock.trade.perf.ServerPerformanceTracker;
 import com.upstock.trade.server.model.UserSubscription;
 import com.upstock.trade.subs.OHLCPacketSubscriptionService;
 import com.upstock.trade.subs.listener.OHLCPacketListener;
@@ -36,27 +37,35 @@ public class SocketHandler extends TextWebSocketHandler {
     private volatile boolean workerStarted;
 
     @Autowired
+    private ServerPerformanceTracker serverPerformanceTracker;
+
+    @Autowired
     private WorkerStarter workerStarter;
 
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws IOException {
 
-        //start workers on first message from any client
-        if (!workerStarted) {
-            synchronized (SocketHandler.class) {
-                if (!workerStarted) {
-                    workerStarter.startAll();
-                    workerStarted = true;
+        Optional<UserSubscription> optionalUserSubscription = Optional.ofNullable(parseUserInput(message));
+        if(optionalUserSubscription.isPresent() && TradeConstants.EVENT_SUBSCRIBE.equalsIgnoreCase(optionalUserSubscription.get().getEvent())) {
+
+            //start workers on first subscription from any client
+            if (!workerStarted) {
+                synchronized (SocketHandler.class) {
+                    if (!workerStarted) {
+                        workerStarter.startAll();
+                        workerStarted = true;
+                    }
                 }
             }
-        }
 
-        Optional<UserSubscription> optionalUserSubscription = Optional.ofNullable(parseUserInput(message));
-        if(optionalUserSubscription.isPresent() && TradeContants.EVENT_SUBSCRIBE.equalsIgnoreCase(optionalUserSubscription.get().getEvent())) {
+            serverPerformanceTracker.increaseSubscriptionCount();
+
+            //create a new ohlc packet listener and register it
             UserSubscription userSubscription = optionalUserSubscription.get();
             OHLCPacketListener ohlcPacketListener =
                     new SendToWebSocketOHLCPacketListener(session, userSubscription.getSymbol(), userSubscription.getInterval());
             ohlcPacketSubscriptionService.addNewListener(ohlcPacketListener);
+
             socketSessionOHLCPacketListenerMap.get(session).add(ohlcPacketListener);
         } else {
             session.sendMessage(new TextMessage("Invalid Input!!"));
@@ -77,12 +86,19 @@ public class SocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         socketSessionOHLCPacketListenerMap.put(session, new ArrayList<>());
+        serverPerformanceTracker.increaseSessionCount();
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         super.afterConnectionClosed(session, status);
-        socketSessionOHLCPacketListenerMap.get(session).forEach(ohlcPacketSubscriptionService::removeListener);
+        serverPerformanceTracker.decreaseSessionCount();
+        socketSessionOHLCPacketListenerMap.get(session).forEach(
+                listener ->
+                {
+                    serverPerformanceTracker.decreaseSubscriptionCount();
+                    ohlcPacketSubscriptionService.removeListener(listener);
+                });
         socketSessionOHLCPacketListenerMap.remove(session);
     }
 

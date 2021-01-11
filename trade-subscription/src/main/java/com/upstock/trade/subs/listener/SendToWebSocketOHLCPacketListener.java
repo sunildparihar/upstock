@@ -11,6 +11,9 @@ import org.springframework.web.socket.WebSocketSession;
 import java.io.IOException;
 import java.util.Objects;
 
+/**
+ * OHLC packet Listener implementation that transmits the packets to the subscriber's web socket session
+ */
 public class SendToWebSocketOHLCPacketListener implements OHLCPacketListener {
 
     private static final Logger logger = LoggerFactory.getLogger(SendToWebSocketOHLCPacketListener.class);

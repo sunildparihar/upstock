@@ -76,6 +76,11 @@
             <artifactId>trade-worker</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>websocket</groupId>
+            <artifactId>performance-tracker</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>

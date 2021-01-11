@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.upstock.trade.commons.constant.TradeContants;
+import com.upstock.trade.commons.constant.TradeConstants;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -40,7 +40,7 @@ public class OHLCPacket {
     private Double volume;
 
     @JsonProperty
-    private String event = TradeContants.EVENT_NOTIFY;
+    private String event = TradeConstants.EVENT_NOTIFY;
 
     @JsonProperty(required = true, value = "symbol")
     private String symbol;
@@ -57,12 +57,10 @@ public class OHLCPacket {
     @JsonIgnore
     private int barSizeInSeconds;
 
-    public static OHLCPacket createNewEmptyPacket(String symbol, long barStartTime, int barNumber, int barSize) {
-        OHLCPacket ohlcPacket = new OHLCPacket();
-        ohlcPacket.setSymbol(symbol);
-        ohlcPacket.setBarStartTime(barStartTime);
-        ohlcPacket.setBarNumber(barNumber);
-        ohlcPacket.setBarSizeInSeconds(barSize);
-        return ohlcPacket;
-    }
+    @JsonIgnore
+    private boolean newTradePacket;
+
+    @JsonIgnore
+    private boolean lastPacket;
+
 }

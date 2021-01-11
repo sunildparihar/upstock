@@ -9,6 +9,9 @@ import javax.annotation.PostConstruct;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+/**
+ * A wrapper to trade record queue. The underlying implementation of queue can be replaced with any messaging queue.
+ */
 @Component
 public class TradeRecordQueue {
 

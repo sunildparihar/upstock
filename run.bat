@@ -1,1 +1,1 @@
-java -jar trade-server/target/tradeserver.jar
+mvn clean package && java -jar trade-server/target/tradeserver.jar
