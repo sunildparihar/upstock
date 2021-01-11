@@ -91,3 +91,6 @@ Wrapper classes to ohlc queue and trade queue. The underlying concrete implement
    * Spring Boot based WebSocket Server Application Module.
    * See SocketHandler Class for WebSocket implementation.
    * See application.properties file for the various configurations.
+   
+### Concurrency Control
+Since it's a multi worker, multi threaded application, Concurrency control has been taken care using ConcurrentHashMap, ReentrantLock, synchronized blocks at various places in application code.
