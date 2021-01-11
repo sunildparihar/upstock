@@ -42,8 +42,8 @@ Reads trade from trades queue and process it to generate one or more OHLC packet
 For the detailed processing logic on generating ohlc packets for a trade, See Java classes and documentations in DefaultTradeProcessor, OHLCPacketHelper, TradeProcessorHelper.
 
 ###### Worker3
-Reads ohlc packets from ohlc packet queue and hands over them to subscription service by invoking OHLCPacketSubscriptionService.notifyAllListenerAsync() method.
-Feeds latest data to performance tracker to update it's stats.
+1. Reads ohlc packets from ohlc packet queue and hands over them to subscription service by invoking OHLCPacketSubscriptionService.notifyAllListenerAsync() method.
+2. Feeds latest data to performance tracker to update it's stats.
 * Module -> trade-subscription
 * Java Classes -> Worker3
 
@@ -73,6 +73,7 @@ Hence other components will be unaffected due to any packet transmission problem
 * Performance Stats are logged at a configured interval. It's configured as "perf.tracker.capture.interval.millis" under trade-server module application.properties file.
 
 Sample perf log stat:
+
 {totalActiveSubscriptions=1, totalActiveSessions=1, totalTradesProcessed=178014, totalTimeTakenInSeconds=10, tradesProcessedPerSecond=17790.0}
 
 * Module -> performance-tracker
