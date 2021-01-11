@@ -1,0 +1,1 @@
+java -jar trade-server/target/tradeserver.jar
