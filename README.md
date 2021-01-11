@@ -2,14 +2,15 @@
 
 * <B>Java Version Used:</B> Java 8
 * <B>Web Server:</B> Spring Boot 2 embedded tomcat on port 8080 (change the port here if needed: trade-server/src/main/resources/application.properties)
-* <B>Build Tool:</B> Maven
+* <B>Build Tool:</B> Apache Maven 3.5.2
 * <B>Main Class:</B> trade-server/src/main/java/com.upstock.trade.server.Application
 
 ##### Assumption:
 Upon receiving first valid subscription request from any client, server will start workers. It will wait until then.
 
-## command to start server on Linux
-From the project's root directory execute below
+## Instructions to setup and start server on Linux
+1. Make sure to have Java 8 and Maven already installed. Maven version used is 3.5.2.
+2. From the project's root directory execute below
 ```
 sh run.sh (Linux/MAC) 
 run.bat (Windows)
