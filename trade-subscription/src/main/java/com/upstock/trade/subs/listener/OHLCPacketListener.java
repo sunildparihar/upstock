@@ -1,14 +1,13 @@
 package com.upstock.trade.subs.listener;
 
-import com.upstock.trade.commons.pojo.OHLCPacket;
+import com.upstock.trade.subs.event.PacketReceivingEvent;
 
 public interface OHLCPacketListener {
 
     /**
-     * Action to be taken when an ohlc packet arrives
-     * @param packet
+     * Action to be taken when an packet receiving event generates
+     * @param event
      */
-    void onPacketReceived(OHLCPacket packet);
+    void onEvent(PacketReceivingEvent event);
 
-    String getTradingSymbolToListen();
 }

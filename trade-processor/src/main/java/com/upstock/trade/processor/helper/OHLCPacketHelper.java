@@ -4,8 +4,6 @@ import com.upstock.trade.commons.pojo.OHLCPacket;
 import com.upstock.trade.commons.pojo.Trade;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
@@ -14,13 +12,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-@Component
 public class OHLCPacketHelper {
 
     private static final Logger logger = LoggerFactory.getLogger(OHLCPacketHelper.class);
 
-    @Value("${ohlc.bar.size}")
     private int barSize;
+
+    public OHLCPacketHelper (int barSize) {
+        this.barSize = barSize;
+    }
 
     /**
      * Creates and returns a closing bar packet with a new fresh incoming trade that happened exactly at the 15 sec bar closing boundary.

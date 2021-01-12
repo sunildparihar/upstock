@@ -2,40 +2,32 @@ package com.upstock.trade.subs;
 
 import com.upstock.trade.commons.pojo.OHLCPacket;
 import com.upstock.trade.subs.listener.OHLCPacketListener;
+import com.upstock.trade.subs.event.PacketReceivingEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PostConstruct;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * An OHLC packet subscription service implementation for
  *
  *  1. Tracking and managing all the listeners.
- *  2. Invoking the subscribed listeners for the incoming packets.
+ *  2. Generating Packet Receiving Event and handing over new events to a packet transmission thread pool so that worker3 don't block upon listener's action completion.
  *
- *  Listeners are invoked in Asyn mode using a Thread Pool so that workers don't block upon listener's action completion
  */
 @Component
-public class OHLCPacketSubscriptionService {
+public class OHLCPacketSubscriptionService implements OHLCPacketSubscriber {
 
     private static final Logger logger = LoggerFactory.getLogger(OHLCPacketSubscriptionService.class);
 
-    private ConcurrentHashMap<String, Set<OHLCPacketListener>> symbolToOHLCPacketListenerMap = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<String, ReadWriteLock> symbolToLockMap = new ConcurrentHashMap<>();
+    private List<OHLCPacketListener> ohlcPacketListeners = new CopyOnWriteArrayList<>();
 
     private ThreadPoolExecutor notifyPoolExecutor;
 
@@ -55,57 +47,34 @@ public class OHLCPacketSubscriptionService {
     public void init() {
         notifyPoolExecutor =
                 new ThreadPoolExecutor(corePoolSize, maxPoolSize, keepAliveTime,
-                        TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(taskQueueSize), new ThreadPoolExecutor.AbortPolicy());
+                        TimeUnit.SECONDS, new ArrayBlockingQueue<>(taskQueueSize), new ThreadPoolExecutor.AbortPolicy());
     }
 
     public void addNewListener(OHLCPacketListener ohlcPacketListener) {
-        String tradingSymbol = ohlcPacketListener.getTradingSymbolToListen();
-        if (!symbolToOHLCPacketListenerMap.containsKey(tradingSymbol)) {
-            symbolToOHLCPacketListenerMap.putIfAbsent(tradingSymbol, new HashSet<>());
-            symbolToLockMap.putIfAbsent(tradingSymbol, new ReentrantReadWriteLock());
-        }
-        ReadWriteLock readWriteLock = symbolToLockMap.get(tradingSymbol);
-        Lock writeLock = readWriteLock.writeLock();
-        writeLock.lock();
-        try {
-            symbolToOHLCPacketListenerMap.get(tradingSymbol).add(ohlcPacketListener);
-        } finally {
-            writeLock.unlock();
-        }
+        ohlcPacketListeners.add(ohlcPacketListener);
     }
 
     public void removeListener(OHLCPacketListener ohlcPacketListener) {
-        Set<OHLCPacketListener> listeners = symbolToOHLCPacketListenerMap.get(ohlcPacketListener.getTradingSymbolToListen());
-        if (!CollectionUtils.isEmpty(listeners)) {
-            ReadWriteLock readWriteLock = symbolToLockMap.get(ohlcPacketListener.getTradingSymbolToListen());
-            Lock writeLock = readWriteLock.writeLock();
-            writeLock.lock();
-            try {
-                listeners.remove(ohlcPacketListener);
-            } finally {
-                writeLock.unlock();
-            }
-        }
+        ohlcPacketListeners.remove(ohlcPacketListener);
     }
 
-    public void notifyAllListenersAsync(OHLCPacket ohlcPacket) {
-        String tradingSymbol = ohlcPacket.getSymbol();
-        ReadWriteLock readWriteLock = symbolToLockMap.get(tradingSymbol);
-        if (!Objects.isNull(readWriteLock)) {
-            notifyPoolExecutor.submit(() -> invokeListeners(readWriteLock, tradingSymbol, ohlcPacket));
-        }
+    private void handleNewPacketReceivedAsync(OHLCPacket ohlcPacket) {
+        PacketReceivingEvent event = generateEvent(ohlcPacket);
+        notifyPoolExecutor.submit(
+                () -> ohlcPacketListeners.forEach(listener -> listener.onEvent(event))
+        );
     }
 
-    private void invokeListeners(ReadWriteLock readWriteLock, String tradingSymbol, OHLCPacket ohlcPacket) {
-        Optional<Set<OHLCPacketListener>> ohlcPacketListeners;
-        Lock readLock = readWriteLock.readLock();
-        readLock.lock();
-        try {
-            ohlcPacketListeners = Optional.ofNullable(symbolToOHLCPacketListenerMap.get(tradingSymbol));
-        } finally {
-            readLock.unlock();
-        }
+    private PacketReceivingEvent generateEvent(OHLCPacket ohlcPacket) {
+        PacketReceivingEvent packetReceivingEvent = new PacketReceivingEvent();
+        packetReceivingEvent.setInterval(ohlcPacket.getBarSizeInSeconds());
+        packetReceivingEvent.setSymbol(ohlcPacket.getSymbol());
+        packetReceivingEvent.setEventData(ohlcPacket);
+        return packetReceivingEvent;
+    }
 
-        ohlcPacketListeners.ifPresent(listeners -> listeners.forEach(listener -> listener.onPacketReceived(ohlcPacket)));
+    @Override
+    public void handleNewPacket(OHLCPacket ohlcPacket) {
+        handleNewPacketReceivedAsync(ohlcPacket);
     }
 }

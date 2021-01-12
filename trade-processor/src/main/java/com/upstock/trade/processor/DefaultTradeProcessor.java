@@ -5,19 +5,19 @@ import com.upstock.trade.commons.pojo.Trade;
 import com.upstock.trade.processor.helper.TradeProcessorHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Component
 public class DefaultTradeProcessor implements TraderProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultTradeProcessor.class);
 
-    @Autowired
     private TradeProcessorHelper tradeProcessorHelper;
+
+    public DefaultTradeProcessor(int barSize) {
+        this.tradeProcessorHelper = new TradeProcessorHelper(barSize);
+    }
 
     @Override
     public List<OHLCPacket> process(Trade newTrade) {

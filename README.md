@@ -5,8 +5,30 @@
 * <B>Build Tool:</B> Apache Maven 3.5.2
 * <B>Main Class:</B> trade-server/src/main/java/com.upstock.trade.server.Application
 
-##### Assumption:
-Upon receiving first valid subscription request from any client, server will start workers. It will wait until then.
+##### Assumptions and testing instructions:
+* Upon receiving first valid subscription request from any client, server will start workers. It will wait until then.
+* Server will stop all the workers once all of the trading packets have been processed.
+* Once all of the packets have been received by client, it can resubmit the subscription request. Server will restart the workers in this case.
+* Performance tracker will print logs only when workers are up. When workers restarts, perf tracker restart as well.
+
+Example to test:
+
+Client:
+```
+wscat -c ws://localhost:8080
+Connected (press CTRL+C to quit)
+> {"event": "subscribe", "symbol": "XETHZUSD", "interval": 15}
+```
+
+Server:
+```
+< {"volume":0.02,"event":"ohlc_notify","o":226.85,"h":226.85,"l":226.85,"c":0,"symbol":"XETHZUSD","bar_num":1}
+< {"volume":5,"event":"ohlc_notify","o":226.85,"h":226.85,"l":226.85,"c":0,"symbol":"XETHZUSD","bar_num":1}
+< {"volume":5,"event":"ohlc_notify","o":226.85,"h":226.85,"l":226.85,"c":226.85,"symbol":"XETHZUSD","bar_num":1}
+< {"event":"ohlc_notify","symbol":"XETHZUSD","bar_num":2}
+< {"volume":2.15891,"event":"ohlc_notify","o":226.61,"h":226.61,"l":226.61,"c":0,"symbol":"XETHZUSD","bar_num":2}
+< {"volume":2.15891,"event":"ohlc_notify","o":226.61,"h":226.61,"l":226.61,"c":226.61,"symbol":"XETHZUSD","bar_num":2}
+```
 
 ## Instructions to setup and start server on Linux
 1. Make sure to have Java 8 and Maven already installed. Maven version used is 3.5.2.
@@ -24,7 +46,7 @@ run.bat (Windows)
 
 ## Architecture Diagram
 
-[See Architecture Diagram Here](https://viewer.diagrams.net/?highlight=0000ff&edit=_blank&layers=1&nav=1#R5Vxbd6M2EP41Pqd9SA5IgOFxk721J92mx%2BnJtm%2FEKDZdbLlCTuz99SuMBEjiZoOx4%2FU%2BLAzDAHP5ZkaXjODtYvOJ%2BKv5HzhA0QgYwWYE348AME3XYf8llG1KcVwrJcxIGHCmnDAJvyNONDh1HQYolhgpxhENVzJxipdLNKUSzScEv8pszziSn7ryZ0gjTKZ%2BpFMfw4DOU6prGzn9Mwpnc%2FFk0%2BBXFr5g5oR47gf4tUCCH0bwlmBM06PF5hZFifKEXtL7PlZczV6MoCVtc8On3308%2F%2FI4mfi%2FUUKX%2F8ZfXh6uuJQXP1rzD%2BYvS7dCAwSvlwFKhBgjePM6DymarPxpcvWV2ZzR5nQRsTOTHWYfmZw8h1F0iyNMdoLgx%2BRnMzp%2FJiIUbSo%2FxsxUxHwL4QWiZMtY%2BA1AvCh3K5cr%2BTW3ke16KW1esI8t%2FMrnfjHLROeqYwdce3toEjZrEgXMtfgpJnSOZ3jpRx9y6o2s65znDuMVV%2Bp%2FiNItjxN%2FTbGsf6Y%2Bsv2a3H%2FtAXH%2Bz%2B4cjm1BeL%2FhT0jPtsWze0RCphFEODH9iuTV603F4tInM0RrVOSWm5SgyKfhiyy%2FzD781nscsidnrmC5Y8kVAFRMHOM1mSJ%2BVzFAVEGWJQkyLUVQ%2BoGaoHeE%2BNsC2yphiNu%2FsHhO7n2pxNwXM2Ud7p7WuMQ%2FnYiZ6yYIX9jhLDnE82gqyOwxhSslzAwEvqHkQ8v5S5z%2Fzn9i6UFyWD8KZ0t2PGXelPjcTQILIcPfd%2FzCIgyCNDZQHH73n3byEsfkambC7ZuR%2Fb4OV3hy4DfnkFx04uqgrgShK%2BPacAFX7KFeLFjw83OM6EiFoT5Mr1n%2BnuApimMGzNx2T0TY7ZdXTL4hAn7tlgcU6H%2B2k39JfqAEf0OFK87ul9yBl7RAT3%2F9JAtLBLKKEIVsYQqfKGYL0zlWtrDPK1uYcqpoShRtc0LvWO94Vrkl98V6x1aw3j4O1qsvLJ5zXKx3NO%2BixE%2FK6IsAZbsJlKGkclGZnS9A6%2BZiAB2sp6gan81Lwmfn%2FPC5rFoaHp%2Fb4myL2ht4RwFk6Mmm02rmtoAMTVf2gZbFd18x6GoG%2F%2FPzHRNl3O%2BqXD0Q%2F1ojxqk6Bet%2FV8lh4FN%2FQjHZjS68qWCEttKdmCXBaJQEo3usWPTeVCz2HmK2o4SY7R4WYjZQYBYogo4cYpZe9F5SWVIBsFw6q0oMz5T0f%2FZ1iYj8gsEeuMF%2BFjTUgu%2FkaGieplPchPRr4TjtE4HNT%2FM%2BMTmRxhO%2FFk%2BKt%2FXQX7aoe6B1FFA2gSdj6aGgDKwGQUcGZVMft47XT%2FGUhE96PLM4orJfNANte9COEsS%2FYeXWbOeuRQzY%2FY6C2mk41Q7xmY4ywNwNt4VkKEu9EgOJA%2BC6PiL4d5w0m4apmXyvrrIHwHWUcChpBZ0SuFWHb%2FqDW70T5LrScfjEuoIluWlYXbnnk5oOy0yNU2TtM1OaAGq0JSDqVClMzTwWdK49x8h%2F1rCJSG%2Fzfq5EVDE7WkhEthzu%2FaShcZnQ4%2BcgoPcWHFfhueGqJUruU%2BGq%2BIKCrtKJWmPFB6dOh7oCMznwmgfB7pCoa7dEXbMCdfN4NOHYOiQG951DglAeGrW4f1YOpUKjE789Nmr5QSd2YNtKQBRmwIYc3RB1%2FHlGVfegGrSWaR1V4z5qmb0jyJRTp%2BWB%2BogwzU78tl0fEsp8157s0HKrI6i36NDT8KD%2BDw4JgDyRZHedmf8XVn4O6P%2FAk6fEm%2FwZePv5v8pvw3qH9rw69iM5tD7oUQ%2F3F9hjgPr1bKzFMJRaQywQ7tpliGQ7QFrXZ5nEFK7xQPxlvAjjOMRLfQ7jYU6QHzC2e4wjzR3e7vIKMFbqQTERV%2BhnvJJ%2BRrRB%2Ffcz%2BoKXzBrqetNEL5IhnP%2FXWFy4ineJ5B1jMK3VJr8opDwiJtCYYG7%2FCSIv%2BaIa9u6pdPmJjPxUuYpVBwXZpEu8RIr9Oak9NJT5lux92Sp7ox8PEQVI7iGW5iGls1zqDHJ%2FLqIPu94j8ozJwl8yvTBTUj%2FJeMYdns0Sk15MtFpAHZbTR3VLo%2FVoGxsMTbtvbFR3yEbIa1sInqYRUgJd2zPUsLxrX37LGWK5q17ZlexWWK8CnybIoSf%2B1jse4hR0Lni%2FQ0V7UlhbqyycBt3qQ7ErcKjqEDonAbO8Q3WcsQxOhtWATh13ZbWErN6nl9QxEWApItqvDDWvDbl%2FzfrNgeamoF6NZJufLiLsnaawN9xucT5A36fPHz7ulsp3nE86q%2BJQbeWy7dWF4tAtKw5BtaW6FYcnnfI%2FbJhcHiU0GuC3R6SFVtvisGKLS%2Bvo62RTS18Sdllo1zjTDgxX2UPUcRhs6Nl1qJfEE7GY4pKaZRUPs864oVnOBjP6Dx59Cd25Ls9ti2y9l4bq4lkI3Wv7sOJQdQAIlUHLnvZxanNwsH5OvYH%2FSI0w0KK%2BegnVm4Ruqx4OEuj2upaq29IbDsFqdpr%2FeZeUPf8jOfDDDw%3D%3D)
+[See Architecture Diagram Here](https://viewer.diagrams.net/?highlight=0000ff&edit=_blank&layers=1&nav=1#R5Vxbc6M2FP41nmkfkgEJMDwm2Vs76TYdp5Nt37BRbLoYuUJ24v31FUYySAIbm4tJ6n1YOBwEnMt3LpIygnfL18%2FEXy1%2BwwGKRsAIXkfwwwgA03Qd9l9K2WYUx7UywpyEAWfKCZPwB%2BJEg1PXYYASiZFiHNFwJRNnOI7RjEo0nxD8IrM940h%2B6sqfI40wmfmRTn0KA7rIqK5t5PQvKJwvxJNNg19Z%2BoKZE5KFH%2BCXAgl%2BHME7gjHNjpavdyhKhSfkkt33qeLq%2FsUIimmdGz7%2F6uPF16fJxP%2BFEhr%2FnXzdPF5ZXjbMxo%2FW%2FIv529KtEAHB6zhA6SjGCN6%2BLEKKJit%2Fll59YUpntAVdRuzMZIf7r0xPnsMousMRJuw8xjFKr1OCvyOFqH8K%2F7oNIhS9Fkj80z4jvESUbBkLtyubm9VLQUkWl%2FyioCB7zIk%2BN4z5fqhcduyAi%2B8EUZp9SXIE4Kf0ZzeUHL8KxItySbqGJknb9UokaXYlSXhckihgXspPMaELPMexH33MqbeyrHOee4xXXKj%2FIEq3HHL8NcWy%2FJlEyfZbev%2B1B8T5X7tzOLYF4cMrf0J2ti2ePSASMokgwomVyqI%2BmSN6QCJuxpd%2B9UGVEhT5NNzI2FWmH37rAw7Zq%2BxNwXLHkikAqKg4wWsyQ%2FyuItaoA1mWNJBpKQNlX6wNdEOIvy2wrVKGpP4Li%2Bfk1peNmNviXljnm6c11uxztZ5GYbIYASdiarwNwg07nKeHeBHNBJk9rXClhJlhwXeUfm85f4kP3PtTFnAlu%2FWjcB6z4xmzstT0blMoCFlEu%2BEXlmEQZC6CkvCHP92Nl9onlzYb3L4d2R9KLfagw6qYsw%2FL%2FCFS5CvDoivj2nABl%2B%2B5xixY8PNzguhIRaM2LEAzgAeCZyhJGD5z3U2J0NtPL5h8RwT83CwcKBHg2U7%2FaQGVXXF2v%2FQOHNMCPfu1EzMs4c8qUBSChglKwq%2FpdBU07GEFDVOOGMfiRaVOuoZ8x7PKNXkq5Du2Avl2N5CvvrB4TreQ72jWRYmfFibDBWXhEG2AMpRELvB%2BuACtq4sBdLCeoWp8Nt8TPjvDw2c9aboEPlfK9mgKDrx%2BABl6suq01LkuIEPTlW2gZg7elg%2B6msJ%2F%2F3LPhjIedlmu7oh%2FrBHjVI2ClcGr9DDwqT%2BhmOz6NW%2FKGaGtFClmiTMaJc7oduWLNZo%2Bl%2FTFrl3MdhQXs93zXMwGCswCZaCOXczSk97BpyXC9hqnJSwrMTxTkv%2Fg8xLh%2BQWFPXKF%2FV%2FQUHO%2Bi6OheZlK8TWk3wrHWZ0IbH6a14npidRW%2FFY8Kd52Tn15NO%2BBVj%2BgbIoES2DpuaAMrCMDdQzKpt6%2BTtbTZEbCqe7PzGmobBfHgbY%2BaEcp4t%2BydGu%2BM9ciBux%2B9VFb%2BEg7LT7TUfrMzXBbjAzlUa9EI7EHXNc7gn8mabFpmJrKT6oqWwBcR3GHklLQKYFbtX3THtzqlSCXlY7DF5YVLIlN%2FcrKHU5oOi8yHZ0pq9RahvcHhCOS78GEMDXyWNC59hwj%2F1n9BiK9zHsHgUi0FVoJRLbs7u2EoXHZoN3HIKDXFhxX4dBw1RLpxKVwdf8FuayyiVpjxZtTl0NdgZkceM2zYLdD1LVroq5ZF3VzfzTh2DrHB0%2BdQ4JQbo1a3D4rW6nQaMQvFh1VliyN2IFtKw5RmAHrs7sh8vhhelVzp%2Boyl6ntVeNOcpmTPciUQ6flgcMeYZqN%2BG37sEso810nskPLrfag1rxDD8O92j84xwHyQLK%2F67L2L7DvwvYPPHlK%2FJg9A%2B80%2B1f5bXjYoD3vEHtHBq03PQ7D%2FVupMUBr69lYiWEouYZYJ9y0yhDBtoewrs8yiSlc45H4cbIMkyTEsT6H8bggyA8Y2wPGkWYOb3d5BRgr%2BaCYiCvUM15JPSPKoPbrGX3By14b6nrTVC6SIpx%2F11hcuEp2geSGMZjW6jW%2FKEZ5QmxAY4K5%2FieIbPJFNezds9HlJzLytHIVqw4KpVsESrYS1IeGMtuSrW%2B%2F2P5gGDthlstWLUTfn1A6y6XOILdnInrb9QGRZ0yWfszkwlRJ%2FTTiGfd4Pk9V%2Bm681QJqW07v6pZ6a2f7GwxNum%2Bsq9thIeTVTQQHUggpjq7twjqyvOtUfsvpY7mrntmV7FZYrwKfpsihB%2F7aOx6SDHTe2n4H0WptZW2tsnAaNMsPxT7LvrJD6FwEzPIK1XHGMjgZ1hF0Om1zVm3I6nxlqNITAZYyRP2Voea1Idev%2B3qzp7kpWLKHSmx%2BGq7biyy7nX1Ozfy8h7pPnz982i2VbzifNKjkUC3l9hvWixuJy5JDUK2pZsnhRaf8z2uTy11C4wj8no%2B0YiL%2FeHJotw3JjXRqle1ortj9uXupGQo3YTxvlluhDYrp28ut2pzgB4arbF1q2H3re1If6pn4RKzheE81ugrD%2B4L8SI2%2B76G077P6yr2hrgqulH%2Ffa3YhdK%2Ft83JS1QAgVHqlLW0f1ab%2B4OGp%2FCP8HdXfQPP66pVbw4Fuq8rtz4Jur2mGvC294RysZqf53%2BnJ2PO%2FdgQ%2F%2Fgc%3D)
 
 ![Alt text](Architecture_Diagram.png?raw=true)
 
@@ -36,14 +58,14 @@ Reads trades json file and pushes the individual trades to the trades queue.
 * Java Classes -> Worker1, DefaultTradeReader
 
 ###### Processor
-Reads trade from trades queue and process it to generate one or more OHLC packets. Pushes the generated packets to the ohlc queue.
+Reads trade from trades queue and process it to generate one or more OHLC packets. Publishes the generated packets to the ohlc packet publisher.
 * Module -> trade-processor
-* Java Classes -> Worker2, DefaultTradeProcessor, OHLCPacketHelper, TradeProcessorHelper
+* Java Classes -> Worker2, DefaultTradeProcessor, OHLCPacketHelper, TradeProcessorHelper, LocalMQPublisher
 
 For the detailed processing logic on generating ohlc packets for a trade, See Java classes and documentations in DefaultTradeProcessor, OHLCPacketHelper, TradeProcessorHelper.
 
 ###### Worker3
-1. Reads ohlc packets from ohlc packet queue and hands over them to subscription service by invoking OHLCPacketSubscriptionService.notifyAllListenerAsync() method.
+1. Reads ohlc packets from ohlc packet queue and hands over them to subscription service by invoking OHLCPacketSubscriptionService.handleNewPacket() method.
 2. Feeds latest data to performance tracker to update it's stats.
 * Module -> trade-subscription
 * Java Classes -> Worker3
@@ -51,14 +73,13 @@ For the detailed processing logic on generating ohlc packets for a trade, See Ja
 ###### Subscriber
 Provides OHLC packet subscription service implementation for
  1. Registering and managing new listeners for the client's trades packet subscription requests.
- 2. It maintains a mapping of listeners per subscription type (trading symbol in our case).
- 3. Handing over new ohlc packets to a packet transmission thread pool so that worker3 don't block upon listener's action completion.
+ 2. Generating Packet Receiving Event and handing over new events to a packet transmission thread pool so that worker3 don't block upon listener's action completion.
  
  * Module -> trade-subscription
  * Java Classes -> OHLCPacketSubscriptionService
 
 ###### Packet Transmission Thread Pool
-A multi thread pool that transmits ohlc packet to WebSocket clients by invoking each of the mapped listener's SendToWebSocketOHLCPacketListener.onPacketReceived() method.
+A multi thread pool that transmits ohlc packet to WebSocket clients by invoking each of the listener's SendToWebSocketOHLCPacketListener.onEvent() method.
 Since it's a pool of threads, it operates independently without blocking worker3 and subscription service.
 Hence other components will be unaffected due to any packet transmission problems.
 
@@ -72,6 +93,7 @@ Hence other components will be unaffected due to any packet transmission problem
 * It starts logging server performance stats only after receiving first valid subscription from any client.
 * It stops logging after the last trade is processed.
 * Performance Stats are logged at a configured interval. It's configured as "perf.tracker.capture.interval.millis" under trade-server module application.properties file.
+* It restarts logging when workers are restarted
 
 Sample perf log stat:
 

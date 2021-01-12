@@ -2,14 +2,13 @@ package com.upstock.trade.subs.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.upstock.trade.commons.logger.ExceptionLogger;
-import com.upstock.trade.commons.pojo.OHLCPacket;
+import com.upstock.trade.subs.event.PacketReceivingEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
-import java.util.Objects;
 
 /**
  * OHLC packet Listener implementation that transmits the packets to the subscriber's web socket session
@@ -30,10 +29,10 @@ public class SendToWebSocketOHLCPacketListener implements OHLCPacketListener {
     }
 
     @Override
-    public void onPacketReceived(OHLCPacket packet) {
-        if (packet.getSymbol().equalsIgnoreCase(symbol) && packet.getBarSizeInSeconds() == barSize) {
+    public void onEvent(PacketReceivingEvent event) {
+        if (isListening(event)) {
             try {
-                String json = objectMapper.writeValueAsString(packet);
+                String json = objectMapper.writeValueAsString(event.getEventData());
                 logger.info(json); //print output json to verify
                 synchronized (webSocketSession) {
                     webSocketSession.sendMessage(new TextMessage(json));
@@ -44,21 +43,21 @@ public class SendToWebSocketOHLCPacketListener implements OHLCPacketListener {
         }
     }
 
-    @Override
-    public String getTradingSymbolToListen() {
+    private boolean isListening(PacketReceivingEvent event) {
+        return symbol.equalsIgnoreCase(event.getEventData().getSymbol())
+                && barSize == event.getEventData().getBarSizeInSeconds();
+    }
+
+    public String getSymbol() {
         return symbol;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        SendToWebSocketOHLCPacketListener that = (SendToWebSocketOHLCPacketListener) o;
-        return Objects.equals(webSocketSession, that.webSocketSession);
+    public WebSocketSession getWebSocketSession() {
+        return webSocketSession;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(webSocketSession);
+    public int getBarSize() {
+        return barSize;
     }
+
 }

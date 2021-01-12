@@ -18,6 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * This class will start logging server performance statistics (at a configured interval "perf.tracker.capture.interval.millis") upon receiving first subscription from any client.
  * It stops logging after the last trade is processed.
+ * It will restart logging when workers are restarted
  * Check perf.log file under the root project directory.
  * @see PerformanceStat
  */
@@ -41,9 +42,26 @@ public class ServerPerformanceTracker {
 
     private Lock lastTradeLock = new ReentrantLock();
 
+    private volatile Thread trackerThread;
+
     @PostConstruct
-    public void init() {
+    private void init() {
         loggingQueue = new ArrayBlockingQueue<>(perfStatQueueSize);
+        startLogger();
+    }
+
+    private void resetTradeStats() {
+        tradesProcessed.set(0);
+        isLastPacketProcessed = false;
+    }
+
+    public void start() {
+        synchronized (this) {
+            resetTradeStats();
+            trackerThread = createNewTracker();
+            trackerThread.setName("Tracker-"+trackerThread.getId() + System.currentTimeMillis()); //setting a unique name
+            trackerThread.start();
+        }
     }
 
     public void addTradeProcessed(OHLCPacket ohlcPacket) {
@@ -63,15 +81,6 @@ public class ServerPerformanceTracker {
     }
 
     public void increaseSubscriptionCount() {
-        if (subscriptionCount.get() == 0) {
-            //first subscription has arrived, start the tracker and logger threads
-            synchronized (this) {
-                if(subscriptionCount.get() == 0) {
-                    startTracker();
-                    startLogger();
-                }
-            }
-        }
         subscriptionCount.incrementAndGet();
     }
 
@@ -87,13 +96,17 @@ public class ServerPerformanceTracker {
         sessionCount.decrementAndGet();
     }
 
-    private void startTracker() {
-        new Thread(() -> {
+    private Thread createNewTracker() {
+        return new Thread(() -> {
             boolean isLastTradeProcessed = false;
             long startTimeInMillis = System.currentTimeMillis();
-            while (!isLastTradeProcessed) {
+            while (isLatestTrackerThread(Thread.currentThread()) && !isLastTradeProcessed) {
                 try {
                     Thread.sleep(perfCaptureIntervalMillis);
+
+                    if (!isLatestTrackerThread(Thread.currentThread())) {
+                        break;
+                    }
 
                     long timeElapsedSinceStart = System.currentTimeMillis() - startTimeInMillis;
                     int totalTradesCount;
@@ -124,7 +137,11 @@ public class ServerPerformanceTracker {
                     new ExceptionLogger().logException(e, "Error while capturing performance stats.");
                 }
             }
-        }).start();
+        });
+    }
+
+    private boolean isLatestTrackerThread(Thread thread) {
+        return thread.getName().equals(trackerThread.getName());
     }
 
     private void startLogger() {

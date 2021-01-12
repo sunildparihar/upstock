@@ -3,10 +3,10 @@ package com.upstock.trade.server;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.upstock.trade.commons.constant.TradeConstants;
 import com.upstock.trade.perf.ServerPerformanceTracker;
-import com.upstock.trade.server.model.UserSubscription;
 import com.upstock.trade.subs.OHLCPacketSubscriptionService;
 import com.upstock.trade.subs.listener.OHLCPacketListener;
 import com.upstock.trade.subs.listener.SendToWebSocketOHLCPacketListener;
+import com.upstock.trade.server.model.UserSubscription;
 import com.upstock.trade.worker.WorkerStarter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +21,6 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
@@ -34,7 +33,7 @@ public class SocketHandler extends TextWebSocketHandler {
 
     private ConcurrentHashMap<WebSocketSession, List<OHLCPacketListener>> socketSessionOHLCPacketListenerMap = new ConcurrentHashMap<>();
 
-    private volatile boolean workerStarted;
+    private ConcurrentHashMap<WebSocketSession, Object> userSessionToLockMap = new ConcurrentHashMap<>();
 
     @Autowired
     private ServerPerformanceTracker serverPerformanceTracker;
@@ -45,32 +44,43 @@ public class SocketHandler extends TextWebSocketHandler {
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws IOException {
 
-        Optional<UserSubscription> optionalUserSubscription = Optional.ofNullable(parseUserInput(message));
-        if(optionalUserSubscription.isPresent() && TradeConstants.EVENT_SUBSCRIBE.equalsIgnoreCase(optionalUserSubscription.get().getEvent())) {
+        UserSubscription userSubscription = parseUserInput(message);
 
-            //start workers on first subscription from any client
-            if (!workerStarted) {
-                synchronized (SocketHandler.class) {
-                    if (!workerStarted) {
-                        workerStarter.startAll();
-                        workerStarted = true;
-                    }
-                }
+        if(isValidSubscriptionRequest(userSubscription)) {
+
+            Object lock = userSessionToLockMap.get(session);
+
+            synchronized (lock) {
+
+                clearExistingSubscriptions(session);
+
+                //create a new ohlc packet listener and register it
+                OHLCPacketListener ohlcPacketListener =
+                        new SendToWebSocketOHLCPacketListener(session, userSubscription.getSymbol(), userSubscription.getInterval());
+
+                serverPerformanceTracker.increaseSubscriptionCount();
+
+                ohlcPacketSubscriptionService.addNewListener(ohlcPacketListener);
+
+                socketSessionOHLCPacketListenerMap.get(session).add(ohlcPacketListener);
             }
 
-            serverPerformanceTracker.increaseSubscriptionCount();
+            //start workers on first subscription from any client
+            workerStarter.startAll();
 
-            //create a new ohlc packet listener and register it
-            UserSubscription userSubscription = optionalUserSubscription.get();
-            OHLCPacketListener ohlcPacketListener =
-                    new SendToWebSocketOHLCPacketListener(session, userSubscription.getSymbol(), userSubscription.getInterval());
-            ohlcPacketSubscriptionService.addNewListener(ohlcPacketListener);
-
-            socketSessionOHLCPacketListenerMap.get(session).add(ohlcPacketListener);
         } else {
             session.sendMessage(new TextMessage("Invalid Input!!"));
         }
 
+    }
+
+    private void clearExistingSubscriptions(WebSocketSession session) {
+        socketSessionOHLCPacketListenerMap.get(session).forEach(
+                listener ->
+                {
+                    serverPerformanceTracker.decreaseSubscriptionCount();
+                    ohlcPacketSubscriptionService.removeListener(listener);
+                });
     }
 
     @Nullable
@@ -85,7 +95,8 @@ public class SocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
-        socketSessionOHLCPacketListenerMap.put(session, new ArrayList<>());
+        socketSessionOHLCPacketListenerMap.putIfAbsent(session, new ArrayList<>());
+        userSessionToLockMap.putIfAbsent(session, new Object());
         serverPerformanceTracker.increaseSessionCount();
     }
 
@@ -100,6 +111,11 @@ public class SocketHandler extends TextWebSocketHandler {
                     ohlcPacketSubscriptionService.removeListener(listener);
                 });
         socketSessionOHLCPacketListenerMap.remove(session);
+        userSessionToLockMap.remove(session);
+    }
+
+    private boolean isValidSubscriptionRequest(UserSubscription userSubscription) {
+        return userSubscription != null && TradeConstants.EVENT_SUBSCRIBE.equalsIgnoreCase(userSubscription.getEvent());
     }
 
 }

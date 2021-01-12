@@ -1,5 +1,7 @@
 package com.upstock.trade.worker;
 
+import com.upstock.trade.commons.logger.ExceptionLogger;
+import com.upstock.trade.perf.ServerPerformanceTracker;
 import com.upstock.trade.processor.Worker2;
 import com.upstock.trade.producer.Worker1;
 import com.upstock.trade.subs.Worker3;
@@ -25,10 +27,51 @@ public class WorkerStarter {
     @Autowired
     private Worker3 worker3;
 
+    @Autowired
+    private ServerPerformanceTracker serverPerformanceTracker;
+
+    private static volatile boolean isRunning;
+
     public void startAll() {
-        logger.info("###### Starting Workers...");
-        new Thread(worker1).start();
-        new Thread(worker2).start();
-        new Thread(worker3).start();
+
+        if(!isRunning) {
+            synchronized (WorkerStarter.class) {
+                if(!isRunning) {
+                    logger.info("###### Starting Workers...");
+                    serverPerformanceTracker.start();
+                    new Thread(() -> {
+
+                        Thread workerThread1 = new Thread(worker1);
+                        Thread workerThread2 = new Thread(worker2);
+                        Thread workerThread3 = new Thread(worker3);
+
+                        workerThread1.start();
+                        workerThread2.start();
+                        workerThread3.start();
+
+                        waitForWorkerToComplete(workerThread1);
+                        waitForWorkerToComplete(workerThread2);
+                        waitForWorkerToComplete(workerThread3);
+
+                        isRunning = false;
+
+                    }).start();
+
+                    isRunning = true;
+                }
+            }
+        } else {
+            logger.info("###### Not Starting Workers as it's already running");
+        }
+
     }
+
+    private void waitForWorkerToComplete(Thread workerThread) {
+        try {
+            workerThread.join();
+        } catch (InterruptedException e) {
+            new ExceptionLogger().logException(e, "Error in Workers!!");
+        }
+    }
+
 }

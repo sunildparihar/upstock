@@ -3,29 +3,20 @@ package com.upstock.trade.processor.helper;
 import com.upstock.trade.commons.constant.TradeConstants;
 import com.upstock.trade.commons.pojo.OHLCPacket;
 import com.upstock.trade.commons.pojo.Trade;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Component
 public class TradeProcessorHelper {
-
-    @Value("${ohlc.bar.size}")
-    private int barSize;
 
     private BigInteger barSizeInNanos;
 
-    @Autowired
     private OHLCPacketHelper ohlcPacketHelper;
 
-    @PostConstruct
-    public void init() {
+    public TradeProcessorHelper (int barSize) {
         barSizeInNanos = BigInteger.valueOf(Math.multiplyExact(barSize, TradeConstants.NANOSEC_IN_A_SECOND));
+        ohlcPacketHelper = new OHLCPacketHelper(barSize);
     }
 
     private ConcurrentHashMap<String, OHLCPacket> symbolToPreviousPacketMap = new ConcurrentHashMap<>();

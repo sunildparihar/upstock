@@ -30,16 +30,16 @@ public class Worker3 implements Runnable {
     @SneakyThrows
     @Override
     public void run() {
-        try {
-            OHLCPacket ohlcPacket;
-            do{
-                ohlcPacket = ohlcPacketQueue.get();
-                ohlcPacketSubscriptionService.notifyAllListenersAsync(ohlcPacket);
+        OHLCPacket ohlcPacket;
+        do {
+            ohlcPacket = ohlcPacketQueue.get();
+            try {
+                ohlcPacketSubscriptionService.handleNewPacket(ohlcPacket);
                 serverPerformanceTracker.addTradeProcessed(ohlcPacket);
-            } while (!ohlcPacket.isLastPacket());
-        } catch (Exception e) {
-            new ExceptionLogger().logException(e, "Exception occurred in worker3 during start..aborting!!");
-        }
+            } catch (Exception e) {
+                new ExceptionLogger().logException(e, "Exception occurred in worker3 skipping this record!!");
+            }
+        } while (!ohlcPacket.isLastPacket());
     }
 
 }

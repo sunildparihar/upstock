@@ -18,4 +18,5 @@ public class UserSubscription {
 
     @JsonProperty(required = true, value = "interval")
     private int interval;
+
 }
