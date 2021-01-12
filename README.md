@@ -58,15 +58,21 @@ Reads trades json file and pushes the individual trades to the trades queue.
 * Java Classes -> Worker1, DefaultTradeReader
 
 ###### Processor
-Reads trade from trades queue and process it to generate one or more OHLC packets. Publishes the generated packets to the ohlc packet publisher.
+
+1. Reads trade from trades queue and process it to generate one or more OHLC packets. 
+2. Publishes the generated packets to the local queue ohlc packet publisher.
+3. Without affecting rest of the application a publisher can be implemented that publishes packets to a message broker topic.
+
 * Module -> trade-processor
 * Java Classes -> Worker2, DefaultTradeProcessor, OHLCPacketHelper, TradeProcessorHelper, LocalMQPublisher
 
 For the detailed processing logic on generating ohlc packets for a trade, See Java classes and documentations in DefaultTradeProcessor, OHLCPacketHelper, TradeProcessorHelper.
 
 ###### Worker3
+
 1. Reads ohlc packets from ohlc packet queue and hands over them to subscription service by invoking OHLCPacketSubscriptionService.handleNewPacket() method.
-2. Feeds latest data to performance tracker to update it's stats.
+2. Without affecting rest of the application this can be enhanced to subscribe to a topic from a packet publishing message broker.
+
 * Module -> trade-subscription
 * Java Classes -> Worker3
 
@@ -74,6 +80,7 @@ For the detailed processing logic on generating ohlc packets for a trade, See Ja
 Provides OHLC packet subscription service implementation for
  1. Registering and managing new listeners for the client's trades packet subscription requests.
  2. Generating Packet Receiving Event and handing over new events to a packet transmission thread pool so that worker3 don't block upon listener's action completion.
+ 3. Feeds latest data to performance tracker to update it's stats.
  
  * Module -> trade-subscription
  * Java Classes -> OHLCPacketSubscriptionService
@@ -87,7 +94,7 @@ Hence other components will be unaffected due to any packet transmission problem
  * Java Classes -> SendToWebSocketOHLCPacketListener, OHLCPacketListener
 
 ###### Performance Stat Logger
-* Receives latest data from worker3, update it's stats and adds the updated stats to a logging queue.
+* Receives latest data from Subscriber, update it's stats and adds the updated stats to a logging queue.
 * A separate logger thread reads stats from the logging queue and prints them.
 * Check the generated log file perf.log under the root project directory.
 * It starts logging server performance stats only after receiving first valid subscription from any client.

@@ -1,10 +1,12 @@
 package com.upstock.trade.subs;
 
 import com.upstock.trade.commons.pojo.OHLCPacket;
+import com.upstock.trade.perf.ServerPerformanceTracker;
 import com.upstock.trade.subs.listener.OHLCPacketListener;
 import com.upstock.trade.subs.event.PacketReceivingEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -43,6 +45,9 @@ public class OHLCPacketSubscriptionService implements OHLCPacketSubscriber {
     @Value("${notify.pool.task.queue.capacity}")
     private int taskQueueSize;
 
+    @Autowired
+    private ServerPerformanceTracker serverPerformanceTracker;
+
     @PostConstruct
     public void init() {
         notifyPoolExecutor =
@@ -76,5 +81,6 @@ public class OHLCPacketSubscriptionService implements OHLCPacketSubscriber {
     @Override
     public void handleNewPacket(OHLCPacket ohlcPacket) {
         handleNewPacketReceivedAsync(ohlcPacket);
+        serverPerformanceTracker.addTradeProcessed(ohlcPacket);
     }
 }
