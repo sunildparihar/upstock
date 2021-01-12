@@ -10,6 +10,7 @@
 * Server will stop all the workers once all of the trading packets have been processed.
 * Once all of the packets have been received by client, it can resubmit the subscription request. Server will restart the workers in this case.
 * Performance tracker will print logs only when workers are up. When workers restarts, perf tracker restart as well.
+* Client will receive ohlc data on every incoming trade.
 
 Example to test:
 
