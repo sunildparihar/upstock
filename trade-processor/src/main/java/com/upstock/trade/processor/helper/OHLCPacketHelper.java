@@ -58,7 +58,7 @@ public class OHLCPacketHelper {
      */
     public Optional<OHLCPacket> createClosingBarPacketWithoutNewTrade(OHLCPacket lastPacket) {
         /*
-         * If there were not any trades in the 15 seconds bar, an empty closing packet need not to be created
+         * If there were not any trades in the 15 seconds bar, an empty closing packet need not to be created as one starting empty packet would already exist for this bar
          */
         if (isPacketEmpty(lastPacket)) {
             return Optional.empty();
